@@ -18,9 +18,9 @@ On the "front end" I have another python script that has a full user menu, utili
 ##Example Usage:
 
 ```python
-import WebBot.WebBot #Your import may differ depending on your setup
+import AgentPy.AgentPy #Your import may differ depending on your setup
 
-worker = WebBot.WebBot.WebWorker(options_here)
+worker = AgentPy.AgentPy.WebWorker(options_here)
 
 worker.task_check_tags(True, 'link', 'alternative', 'rel', site_type, 1)
 ```
