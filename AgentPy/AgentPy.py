@@ -21,6 +21,9 @@ class WebWorker(object):
         self.end_time = ''
         self.exception_list = exception_list
         self.sitemap_url = sitemap_url
+        self.pages_crawled = []
+        self.pages_to_crawl = []
+        self.generated_sitemap = {}
 
     def get_sitemap(self):
         response = urllib.request.urlopen(self.sitemap_url)
@@ -194,6 +197,14 @@ class WebWorker(object):
         datetime.timedelta(0, 8, 562000)
         time_out = divmod(total_time.days * 86400 + total_time.seconds, 60)
         return "Report finished in: {}".format(time_out)
+
+    def task_home_crawl(self):
+        """This task will hit a home page and keep crawling all pages of the base_url until the list is done.
+        This task can be a good way to see all the possible URLs a visitor can hit from the homepage and to be sure
+        your sitemap is accurate (or use this to build a sitemap)."""
+        self.start_task()
+        self.end_task()
+        print(self.report_finished())
 
     def task_absolute_links(self, allow_list=[], site_type='wired'):
         self.start_task()
