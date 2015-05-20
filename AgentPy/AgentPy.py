@@ -1,4 +1,4 @@
-__author__ = 'jason.martin'
+__author__ = 'jason.a.martin'
 
 import urllib.request
 from bs4 import BeautifulSoup
@@ -24,12 +24,30 @@ class WebWorker(object):
         self.pages_crawled = []
         self.pages_to_crawl = []
         self.generated_sitemap = {}
+        self.user_agent = ''
+
+    def set_user_agent(self, agent):
+        self.user_agent = agent
+
+    def fetch_page(self, page):
+        headers = {}
+        if not self.user_agent:
+            headers['User-Agent'] = self.user_agent
+        try:
+            request = urllib.request.Request(page, headers=headers)
+            response = urllib.request.urlopen(request)
+            return response
+        except urllib.error.URLError as url_error:
+            print("URL: {}\nFETCH ERROR: {}".format(page, url_error.reason))
+            return False
 
     def get_sitemap(self):
-        response = urllib.request.urlopen(self.sitemap_url)
-        response_html = response.read()
-        self.soup = BeautifulSoup(response_html)
-        return
+        response = self.fetch_page(self.sitemap_url)
+        if response:
+            self.soup = BeautifulSoup(response.read())
+            return True
+        else:
+            return None
 
     def get_mobile_pages(self):
         self.tag = "xhtml:link"
@@ -63,15 +81,6 @@ class WebWorker(object):
             items.append(item.text)
         return items
 
-    def verify_url(self, page):
-        # making sure the url can be opened
-        try:
-            response = urllib.request.urlopen(page)
-            return response
-        except urllib.error.URLError as url_error:
-            print("URL: {}\nFETCH ERROR: {}".format(page, url_error.reason))
-            return False
-
     def scrub_link_exception(self, page):
         link_found = False
         for link in self.exception_list:
@@ -88,11 +97,10 @@ class WebWorker(object):
         self.end_time = datetime.datetime.now()
 
     def catch_mobile_absolute_links(self, page, allow_list=[]):
-        # change page to match environment
+        '#change page to match environment'
         report = []
         first_case = True
-
-        page_exists = self.verify_url(page)
+        page_exists = self.fetch_page(page)
         if not page_exists:
             return None
         html = page_exists.read()
@@ -121,7 +129,7 @@ class WebWorker(object):
         # change page to match environment
         report = []
         first_case = True
-        page_exists = self.verify_url(page)
+        page_exists = self.fetch_page(page)
         if not page_exists:
             return None
 
@@ -206,19 +214,20 @@ class WebWorker(object):
         self.end_task()
         print(self.report_finished())
 
-    def task_absolute_links(self, allow_list=[], site_type='wired'):
+    def task_absolute_links(self, allow_list=[], site_type='wired', flag_max=0):
         self.start_task()
         self.create_report_file()
-        self.get_sitemap()
-        if site_type == 'mobile':
-            links = self.get_mobile_pages()
-        else:
-            links = self.get_wired_pages()
-        # Got all links so parse them
-        for link in links:
-            current_item = self.catch_mobile_absolute_links(link, allow_list)
-            if current_item:
-                self.building_report(current_item, 1, flag_max)
+        has_sitemap = self.get_sitemap()
+        if has_sitemap:
+            if site_type == 'mobile':
+                links = self.get_mobile_pages()
+            else:
+                links = self.get_wired_pages()
+            # Got all links so parse them
+            for link in links:
+                current_item = self.catch_mobile_absolute_links(link, allow_list)
+                if current_item:
+                    self.building_report(current_item, 1, flag_max)
         self.end_task()
         print(self.report_finished())
 
@@ -228,18 +237,19 @@ class WebWorker(object):
         flag_max means if the bot finds more than X number of tags, it will flag the entry"""
         self.start_task()
         self.create_report_file()
-        self.get_sitemap()
-        if site_type == 'mobile':
-            links = self.get_mobile_pages()
-        else:
-            links = self.get_wired_pages()
-        # Got all links so parse them
-        for link in links:
-            current_item = self.check_for_page_tags(link, tag, classname, sub_tag_type)
-            if current_item and has_tags:
-                self.building_report(current_item, 1, flag_max)
-            elif not current_item and not has_tags:
-                # the link has no ad div
-                self.building_report(link, 0,  flag_max)  # 0 for not iterating list
+        has_sitemap = self.get_sitemap()
+        if has_sitemap:
+            if site_type == 'mobile':
+                links = self.get_mobile_pages()
+            else:
+                links = self.get_wired_pages()
+            # Got all links so parse them
+            for link in links:
+                current_item = self.check_for_page_tags(link, tag, classname, sub_tag_type)
+                if current_item and has_tags:
+                    self.building_report(current_item, 1, flag_max)
+                elif not current_item and not has_tags:
+                    # the link has no ad div
+                    self.building_report(link, 0,  flag_max)  # 0 for not iterating list
         self.end_task()
         print(self.report_finished())
