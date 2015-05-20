@@ -30,6 +30,7 @@ class WebWorker(object):
         self.user_agent = agent
 
     def fetch_page(self, page):
+        print("Attempting to grab page: {}".format(page))
         headers = {}
         if not self.user_agent:
             headers['User-Agent'] = self.user_agent
@@ -37,7 +38,7 @@ class WebWorker(object):
             request = urllib.request.Request(page, headers=headers)
             response = urllib.request.urlopen(request)
             return response
-        except urllib.error.URLError as url_error:
+        except urllib.request.URLError as url_error:
             print("URL: {}\nFETCH ERROR: {}".format(page, url_error.reason))
             return False
 
@@ -97,7 +98,7 @@ class WebWorker(object):
         self.end_time = datetime.datetime.now()
 
     def catch_mobile_absolute_links(self, page, allow_list=[]):
-        '#change page to match environment'
+        # change page to match environment
         report = []
         first_case = True
         page_exists = self.fetch_page(page)
@@ -112,7 +113,7 @@ class WebWorker(object):
         for link in links:
             checking_link = self.scrub_link_exception(link)
             if not checking_link:  # link not found so proceed
-                #cycle through list and look for allowed url bases
+                # cycle through list and look for allowed url bases
                 for allowed_url in allow_list:
                     if allowed_url in str(link):
                         if first_case:
@@ -211,6 +212,43 @@ class WebWorker(object):
         This task can be a good way to see all the possible URLs a visitor can hit from the homepage and to be sure
         your sitemap is accurate (or use this to build a sitemap)."""
         self.start_task()
+        self.create_report_file()
+        response = self.fetch_page(self.base_url)
+        if response:
+            self.soup = BeautifulSoup(response.read())
+            self.tag = "a"
+            page_tags = self.parse_tag()
+            page_links = self.parse_href(page_tags)
+            for link in page_links:
+                if "http://" in str(link):
+                    if self.base_url in str(link):
+                        self.pages_to_crawl.append(link)
+                else:
+                    self.pages_to_crawl.append(self.base_url+"/"+str(link))
+            while True:
+                # go to next page [0], get links, check if links were looked at, append crawl pages and remove
+                current_page = self.pages_to_crawl[0]
+                print("Working on page: {}".format(current_page))
+                current_response = self.fetch_page(current_page)
+                if current_response:
+                    self.soup = BeautifulSoup(current_response.read())
+                    self.tag = "a"
+                    page_tags = self.parse_tag()
+                    page_links = self.parse_href(page_tags)
+                    for link in page_links:
+                        if "http://" in str(link):
+                            if self.base_url in str(link):
+                                if link not in self.pages_to_crawl:
+                                    self.pages_to_crawl.append(link)
+                        else:
+                            if link not in self.pages_to_crawl:
+                                self.pages_to_crawl.append(self.base_url+"/"+str(link))
+                self.pages_crawled.append(current_page)
+                self.pages_to_crawl.remove(current_page)
+                if len(self.pages_to_crawl) == 0:
+                    print("FINISHING WITH CRAWLS LEFT: {}".format(self.pages_to_crawl))
+                    break
+        self.building_report(self.pages_crawled, 1, 0)
         self.end_task()
         print(self.report_finished())
 
