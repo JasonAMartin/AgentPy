@@ -6,6 +6,7 @@ import datetime
 
 class WebWorker(object):
     """A class that does various web-based tasks."""
+    """Tasks are created in the subclass in AgentPyTasks.py"""
 
     def __init__(self, task_description, environment_description, base_url, report_file, sitemap_url, exception_list=[]):
         self.task_description = task_description
@@ -85,7 +86,8 @@ class WebWorker(object):
     def scrub_link_exception(self, page):
         link_found = False
         for link in self.exception_list:
-            if link == str(page):
+            #changing == to in for link in str(page) to match contains verses absolutes.
+            if link in str(page):
                 link_found = True
         return link_found
 
@@ -97,7 +99,7 @@ class WebWorker(object):
         print("Ending task: {}".format(self.task_description))
         self.end_time = datetime.datetime.now()
 
-    def catch_mobile_absolute_links(self, page, allow_list=[]):
+    def catch_absolute_links(self, page, allow_list=[]):
         # change page to match environment
         report = []
         first_case = True
@@ -207,87 +209,12 @@ class WebWorker(object):
         time_out = divmod(total_time.days * 86400 + total_time.seconds, 60)
         return "Report finished in: {}".format(time_out)
 
-    def task_home_crawl(self):
-        """This task will hit a home page and keep crawling all pages of the base_url until the list is done.
-        This task can be a good way to see all the possible URLs a visitor can hit from the homepage and to be sure
-        your sitemap is accurate (or use this to build a sitemap)."""
-        self.start_task()
-        self.create_report_file()
-        response = self.fetch_page(self.base_url)
-        if response:
-            self.soup = BeautifulSoup(response.read())
-            self.tag = "a"
-            page_tags = self.parse_tag()
-            page_links = self.parse_href(page_tags)
-            for link in page_links:
-                if "http://" in str(link):
-                    if self.base_url in str(link):
+    def page_crawl_scrub(self, links):
+        for link in links:
+            if "http://" in str(link):
+                if self.base_url in str(link):
+                    if (link not in self.pages_to_crawl) and (link not in self.pages_crawled):
                         self.pages_to_crawl.append(link)
-                else:
+            else:
+                if (self.base_url+"/"+str(link) not in self.pages_to_crawl) and (self.base_url+"/"+str(link) not in self.pages_crawled):
                     self.pages_to_crawl.append(self.base_url+"/"+str(link))
-            while True:
-                # go to next page [0], get links, check if links were looked at, append crawl pages and remove
-                current_page = self.pages_to_crawl[0]
-                print("Working on page: {}".format(current_page))
-                current_response = self.fetch_page(current_page)
-                if current_response:
-                    self.soup = BeautifulSoup(current_response.read())
-                    self.tag = "a"
-                    page_tags = self.parse_tag()
-                    page_links = self.parse_href(page_tags)
-                    for link in page_links:
-                        if "http://" in str(link):
-                            if self.base_url in str(link):
-                                if link not in self.pages_to_crawl:
-                                    self.pages_to_crawl.append(link)
-                        else:
-                            if link not in self.pages_to_crawl:
-                                self.pages_to_crawl.append(self.base_url+"/"+str(link))
-                self.pages_crawled.append(current_page)
-                self.pages_to_crawl.remove(current_page)
-                if len(self.pages_to_crawl) == 0:
-                    print("FINISHING WITH CRAWLS LEFT: {}".format(self.pages_to_crawl))
-                    break
-        self.building_report(self.pages_crawled, 1, 0)
-        self.end_task()
-        print(self.report_finished())
-
-    def task_absolute_links(self, allow_list=[], site_type='wired', flag_max=0):
-        self.start_task()
-        self.create_report_file()
-        has_sitemap = self.get_sitemap()
-        if has_sitemap:
-            if site_type == 'mobile':
-                links = self.get_mobile_pages()
-            else:
-                links = self.get_wired_pages()
-            # Got all links so parse them
-            for link in links:
-                current_item = self.catch_mobile_absolute_links(link, allow_list)
-                if current_item:
-                    self.building_report(current_item, 1, flag_max)
-        self.end_task()
-        print(self.report_finished())
-
-    def task_check_tags(self, has_tags=True, tag='', classname='', sub_tag_type='class', site_type='wired', flag_max=0):
-        """has_tags: When set to True this function searches the page for the tag. When False, it searches for absense of tag.
-        Also you pass in the tag you're searching for, like 'div' and the classname if desired, like 'my-class'
-        flag_max means if the bot finds more than X number of tags, it will flag the entry"""
-        self.start_task()
-        self.create_report_file()
-        has_sitemap = self.get_sitemap()
-        if has_sitemap:
-            if site_type == 'mobile':
-                links = self.get_mobile_pages()
-            else:
-                links = self.get_wired_pages()
-            # Got all links so parse them
-            for link in links:
-                current_item = self.check_for_page_tags(link, tag, classname, sub_tag_type)
-                if current_item and has_tags:
-                    self.building_report(current_item, 1, flag_max)
-                elif not current_item and not has_tags:
-                    # the link has no ad div
-                    self.building_report(link, 0,  flag_max)  # 0 for not iterating list
-        self.end_task()
-        print(self.report_finished())
