@@ -8,7 +8,7 @@ class WebWorker(object):
     """A class that does various web-based tasks."""
     """Tasks are created in the subclass in AgentPyTasks.py"""
 
-    def __init__(self, task_description, environment_description, base_url, report_file, sitemap_url, exception_list=[]):
+    def __init__(self, task_description, environment_description, base_url, report_file, sitemap_url, exception_list=[], silent=False):
         self.task_description = task_description
         self.environment_description = environment_description
         self.base_url = base_url
@@ -26,12 +26,14 @@ class WebWorker(object):
         self.pages_to_crawl = []
         self.generated_sitemap = {}
         self.user_agent = ''
+        self.silent = silent
 
     def set_user_agent(self, agent):
         self.user_agent = agent
 
     def fetch_page(self, page):
-        print("Attempting to grab page: {}".format(page))
+        if not self.silent:
+            print("Attempting to grab page: {}".format(page))
         headers = {}
         if not self.user_agent:
             headers['User-Agent'] = self.user_agent
@@ -50,6 +52,13 @@ class WebWorker(object):
             return True
         else:
             return None
+
+    def parse_html(self, page, code):
+        if code in str(page):
+            print("Code found.")
+            return True
+        else:
+            return False
 
     def get_mobile_pages(self):
         self.tag = "xhtml:link"
@@ -83,10 +92,17 @@ class WebWorker(object):
             items.append(item.text)
         return items
 
+    def url_status_code(self, url='', replace_url=''):
+        try:
+            r = urllib.request.urlopen(url.replace(replace_url[0], replace_url[1]))
+            return r.getcode()
+        except urllib.request.URLError as url_error:
+            return 404
+
     def scrub_link_exception(self, page):
         link_found = False
         for link in self.exception_list:
-            #changing == to in for link in str(page) to match contains verses absolutes.
+            # changing == to in for link in str(page) to match contains verses absolutes.
             if link in str(page):
                 link_found = True
         return link_found
@@ -171,12 +187,14 @@ class WebWorker(object):
             txtFile.write("Task: {}\n\n\n".format(self.task_description))
             txtFile.close()
 
-    def building_report(self, data, iterate=1, flag_max=0):
+    def building_report(self, data, iterate=1, flag_max=0, no_report_urls=[], report_only_offending=False, check_url=False, replace_url=[]):
         index = 0
+        offending_items = 0
         all_text = ''
         flag_class = ''
+        working_url = 0
         if flag_max is not 0:
-            if len(data) - 1 > flag_max:
+            if len(data) -1 > flag_max:
                 flag_class = "scanFlagSite"
         html = '<div class="scanSection {}">'.format(flag_class)
         # if iterate is 1, normal reporting
@@ -186,22 +204,31 @@ class WebWorker(object):
                     html += '<div class="scanSite">{}</div>'.format(item)
                     all_text += '\n{}\n'.format(item)
                 else:
-                    html += '<div class="scanOffendingURL">{}</div>'.format(item)
-                    all_text += '\t{}\n'.format(item)
+                    if item not in no_report_urls:
+                        if check_url:
+                            working_url = self.url_status_code(url=item, replace_url=replace_url)
+
+                        if (not check_url) or (check_url and working_url == 200):
+                            html += '<div class="scanOffendingURL">{}</div>'.format(item)
+                            all_text += '\t{}\n'.format(item)
+                            offending_items += 1
                 index += 1
         else:
             html += '<div class="scanSite">{}</div>'.format(data)
             all_text += '{}\n'.format(data)
         # end iterate
         html += "</div>"
-        # write to file
-        with open(self.report_file + '.html', 'a') as f:
-            f.write(html)
-            f.close()
-        # writing txt file too
-        with open(self.report_file + '.txt', 'a') as txtFile:
-            txtFile.write(all_text)
-            txtFile.close()
+
+        # reporting if report_only_offending is turned on and there are offending items or the options is false.
+        if (iterate == 1 and offending_items > 0 and report_only_offending) or not report_only_offending:
+            # write to file
+            with open(self.report_file + '.html', 'a') as f:
+                f.write(html)
+                f.close()
+            # writing txt file too
+            with open(self.report_file + '.txt', 'a') as txtFile:
+                txtFile.write(all_text)
+                txtFile.close()
 
     def report_finished(self):
         total_time = self.end_time - self.start_time

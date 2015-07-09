@@ -1,4 +1,4 @@
-__author__ = 'jason.martin'
+__author__ = 'jason.a.martin'
 
 from AgentPy.AgentPy import WebWorker
 from bs4 import BeautifulSoup
@@ -41,7 +41,7 @@ class WorkerTasks(WebWorker):
         self.end_task()
         print(self.report_finished())
 
-    def task_absolute_links(self, allow_list=[], site_type='wired', flag_max=0):
+    def task_absolute_links(self, allow_list=[], site_type='wired', flag_max=0, no_report_urls=[], report_only_offending=False, check_url=False, replace_url=[]):
         self.start_task()
         self.create_report_file()
         has_sitemap = self.get_sitemap()
@@ -54,7 +54,30 @@ class WorkerTasks(WebWorker):
             for link in links:
                 current_item = self.catch_absolute_links(page=link, allow_list=allow_list)
                 if current_item:
-                    self.building_report(data=current_item, iterate=1, flag_max=flag_max)
+                    print(current_item)
+                    self.building_report(data=current_item, iterate=1, flag_max=flag_max, no_report_urls=no_report_urls, report_only_offending=report_only_offending, check_url=check_url, replace_url=replace_url)
+        self.end_task()
+        print(self.report_finished())
+
+    def code_check(self, code='', site_type='wired'):
+        """Use this when you want to do a simple parse html for code, such as looking for a hidden comment"""
+        self.start_task()
+        self.create_report_file()
+        has_sitemap = self.get_sitemap()
+        if has_sitemap:
+            if site_type == 'mobile':
+                links = self.get_mobile_pages()
+            else:
+                links = self.get_wired_pages()
+            # Got all links so parse them
+            for link in links:
+                checking_link = self.scrub_link_exception(link)
+                if not checking_link:
+                    current_page = self.fetch_page(page=link)
+                    if current_page:
+                        current_item = self.parse_html(page=current_page.read(), code=code)
+                        if current_item:
+                            self.building_report(data=current_item, iterate=0)
         self.end_task()
         print(self.report_finished())
 
@@ -84,4 +107,3 @@ class WorkerTasks(WebWorker):
         print(self.report_finished())
 
 """This sub class is for making task functions that use the AgentPy core"""
-
