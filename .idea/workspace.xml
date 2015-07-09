@@ -2,11 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="ec0ef3bb-92cd-4513-8640-39e96845b55d" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/AgentPy.iml" afterPath="$PROJECT_DIR$/.idea/AgentPy.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/AgentPy/AgentPy.py" afterPath="$PROJECT_DIR$/AgentPy/AgentPy.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/AgentPy/AgentPyTasks.py" afterPath="$PROJECT_DIR$/AgentPy/AgentPyTasks.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/README.md" afterPath="$PROJECT_DIR$/README.md" />
     </list>
     <ignored path="AgentPy.iws" />
     <ignored path=".idea/workspace.xml" />

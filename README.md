@@ -1,15 +1,15 @@
 AgentPy
 ============
 
-This is a Python class I created so that I could do some tasks for work and fun.
+I created AgentPy to support my site checking/scraping needs. Additionally, my work started using the library, so I wrote a front-end for it for work and continued to develop this library out.
 
-For work, I wanted a way to hit our whole site (1000s of pages) to verify my work before sending it off to QA.
+For work, AgentPy is used to grab and process 1000s of files to help us save QA team time, to be alerted of publishing errors and to keep on top of a large site.
 
 The main reason this is here is in case someone wants to use it or learn from it. 
 
 On the "front end" I have another python script that has a full user menu, utilizes all the functions here, and so forth, but that script isn't GitHub since it was for work only.
 
-** May 18, 2015 - I'll be creating a "worker" script and uploading it to this repo soon.
+** At some point, I'll be putting up a basic version example of the front-end script I use at work for AgentPy.
 
 ##Requirements:
 
