@@ -9,7 +9,9 @@ The main reason this is here is in case someone wants to use it or learn from it
 
 On the "front end" I have another python script that has a full user menu, utilizes all the functions here, and so forth, but that script isn't GitHub since it was for work only.
 
-** At some point, I'll be putting up a basic version example of the front-end script I use at work for AgentPy.
+##Front End
+
+The file "AgentPy-frontend.py" has a very stripped-down version of a front-end. It should give you ideas on how to interact with AgentPy.
 
 ##Requirements:
 
