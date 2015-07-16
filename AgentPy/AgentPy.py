@@ -3,12 +3,14 @@ __author__ = 'jason.a.martin'
 import urllib.request
 from bs4 import BeautifulSoup
 import datetime
+import smtplib
+from email.mime.text import MIMEText
 
 class WebWorker(object):
     """A class that does various web-based tasks."""
     """Tasks are created in the subclass in AgentPyTasks.py"""
 
-    def __init__(self, task_description, environment_description, base_url, report_file, sitemap_url, exception_list=[], silent=False):
+    def __init__(self, task_description, environment_description, base_url, report_file, sitemap_url, exception_list=[], silent=False, email_reports=False, emails=[], mail_server=''):
         self.task_description = task_description
         self.environment_description = environment_description
         self.base_url = base_url
@@ -27,6 +29,9 @@ class WebWorker(object):
         self.generated_sitemap = {}
         self.user_agent = ''
         self.silent = silent
+        self.email_reports = email_reports
+        self.emails = emails
+        self.mail_server = mail_server
 
     def set_user_agent(self, agent):
         self.user_agent = agent
@@ -234,7 +239,26 @@ class WebWorker(object):
         total_time = self.end_time - self.start_time
         datetime.timedelta(0, 8, 562000)
         time_out = divmod(total_time.days * 86400 + total_time.seconds, 60)
+        # email report if requested
+        print("email reports: ", self.email_reports)
+        if self.email_reports:
+            print(">>>>>> MADE IT!")
+            self.email_report()
         return "Report finished in: {}".format(time_out)
+
+    def email_report(self):
+        # self.report_file + '.txt'
+        print("Using mail server: ", self.mail_server)
+        with open(self.report_file + '.txt') as reportFile:
+            msg = MIMEText(reportFile.read())
+            # Construct email
+            msg['To'] = 'jason.martin@vegas.com'
+            msg['From'] = 'jason.martin@vegas.com'
+            msg['Subject'] = 'xxxxx'
+
+            s = smtplib.SMTP(self.mail_server)
+            s.send_message(msg)
+            s.quit()
 
     def page_crawl_scrub(self, links):
         for link in links:
