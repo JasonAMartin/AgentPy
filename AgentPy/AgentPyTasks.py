@@ -54,7 +54,6 @@ class WorkerTasks(WebWorker):
             for link in links:
                 current_item = self.catch_absolute_links(page=link, allow_list=allow_list)
                 if current_item:
-                    print(current_item)
                     self.building_report(data=current_item, iterate=1, flag_max=flag_max, no_report_urls=no_report_urls, report_only_offending=report_only_offending, check_url=check_url, replace_url=replace_url)
         self.end_task()
         print(self.report_finished())

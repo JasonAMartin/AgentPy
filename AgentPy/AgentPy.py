@@ -10,7 +10,7 @@ class WebWorker(object):
     """A class that does various web-based tasks."""
     """Tasks are created in the subclass in AgentPyTasks.py"""
 
-    def __init__(self, task_description, environment_description, base_url, report_file, sitemap_url, exception_list=[], silent=False, email_reports=False, emails=[], mail_server=''):
+    def __init__(self, task_description, environment_description, base_url, report_file, sitemap_url, exception_list=[], silent=False, email_reports=False, emails=[], mail_server='', from_email=''):
         self.task_description = task_description
         self.environment_description = environment_description
         self.base_url = base_url
@@ -32,6 +32,7 @@ class WebWorker(object):
         self.email_reports = email_reports
         self.emails = emails
         self.mail_server = mail_server
+        self.from_email = from_email
 
     def set_user_agent(self, agent):
         self.user_agent = agent
@@ -47,7 +48,8 @@ class WebWorker(object):
             response = urllib.request.urlopen(request)
             return response
         except urllib.request.URLError as url_error:
-            print("URL: {}\nFETCH ERROR: {}".format(page, url_error.reason))
+            if not self.silent:
+                print("URL: {}\nFETCH ERROR: {}".format(page, url_error.reason))
             return False
 
     def get_sitemap(self):
@@ -60,7 +62,8 @@ class WebWorker(object):
 
     def parse_html(self, page, code):
         if code in str(page):
-            print("Code found.")
+            if not self.silent:
+                print("Code found.")
             return True
         else:
             return False
@@ -113,11 +116,13 @@ class WebWorker(object):
         return link_found
 
     def start_task(self):
-        print("Starting task: {}".format(self.task_description))
+        if not self.silent:
+            print("Starting task: {}".format(self.task_description))
         self.start_time = datetime.datetime.now()
 
     def end_task(self):
-        print("Ending task: {}".format(self.task_description))
+        if not self.silent:
+            print("Ending task: {}".format(self.task_description))
         self.end_time = datetime.datetime.now()
 
     def catch_absolute_links(self, page, allow_list=[]):
@@ -185,7 +190,7 @@ class WebWorker(object):
             f.write('<link rel="stylesheet" type="text/css" href="style.css">')
             f.write('<div class="scanEnvironment">ENVIRONMENT: {}</div>'.format(self.environment_description))
             f.close()
-            # making TXT report too
+        # making TXT report too
         with open(self.report_file + '.txt', 'w') as txtFile:
             txtFile.write("Report generated on: {}\n".format(datetime.datetime.now()))
             txtFile.write("Environment: {}\n".format(self.environment_description))
@@ -240,25 +245,34 @@ class WebWorker(object):
         datetime.timedelta(0, 8, 562000)
         time_out = divmod(total_time.days * 86400 + total_time.seconds, 60)
         # email report if requested
-        print("email reports: ", self.email_reports)
         if self.email_reports:
-            print(">>>>>> MADE IT!")
             self.email_report()
         return "Report finished in: {}".format(time_out)
 
     def email_report(self):
-        # self.report_file + '.txt'
-        print("Using mail server: ", self.mail_server)
-        with open(self.report_file + '.txt') as reportFile:
-            msg = MIMEText(reportFile.read())
-            # Construct email
-            msg['To'] = 'jason.martin@vegas.com'
-            msg['From'] = 'jason.martin@vegas.com'
-            msg['Subject'] = 'xxxxx'
-
-            s = smtplib.SMTP(self.mail_server)
-            s.send_message(msg)
-            s.quit()
+        # Check if emails were set and if so, build a To: list.
+        if len(self.emails) > 0:
+            first_email = 0
+            all_emails = ''
+            for current_email in self.emails:
+                if first_email == 0:
+                    all_emails = current_email
+                    first_email = 1
+                else:
+                    all_emails += ","+current_email
+            # self.report_file + '.txt'
+            if not self.silent:
+                print("Emailing reports to {} using mail server {}: ".format(all_emails, self.mail_server))
+            with open(self.report_file + '.txt') as reportFile:
+                # Reading the TXT version of the report file
+                msg = MIMEText(reportFile.read())
+                # Building email to send.
+                msg['To'] = all_emails
+                msg['From'] = self.from_email
+                msg['Subject'] = 'AgentPy Report: ' + self.task_description
+                s = smtplib.SMTP(self.mail_server)
+                s.send_message(msg)
+                s.quit()
 
     def page_crawl_scrub(self, links):
         for link in links:
