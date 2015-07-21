@@ -10,7 +10,7 @@ class WebWorker(object):
     """A class that does various web-based tasks."""
     """Tasks are created in the subclass in AgentPyTasks.py"""
 
-    def __init__(self, task_description, environment_description, base_url, report_file, sitemap_url, exception_list=[], silent=False, email_reports=False, emails=[], mail_server='', from_email=''):
+    def __init__(self, task_description, environment_description, base_url, report_file, sitemap_url, exception_list=[], silent=False, email_reports=False, emails=[], mail_server='', from_email='', task_file=''):
         self.task_description = task_description
         self.environment_description = environment_description
         self.base_url = base_url
@@ -33,6 +33,7 @@ class WebWorker(object):
         self.emails = emails
         self.mail_server = mail_server
         self.from_email = from_email
+        self.task_file = task_file
 
     def set_user_agent(self, agent):
         self.user_agent = agent

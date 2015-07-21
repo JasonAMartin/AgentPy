@@ -76,7 +76,7 @@ class WorkerTasks(WebWorker):
                     if current_page:
                         current_item = self.parse_html(page=current_page.read(), code=code)
                         if current_item:
-                            self.building_report(data=current_item, iterate=0)
+                            self.building_report(data=link, iterate=0)
         self.end_task()
         print(self.report_finished())
 
@@ -105,4 +105,22 @@ class WorkerTasks(WebWorker):
         self.end_task()
         print(self.report_finished())
 
+    def url_verify(self, urls=[]):
+        self.start_task()
+        self.create_report_file()
+
+        if self.task_file:
+            # TODO: Add guard against file not existing!
+            with open(self.task_file) as taskfile:
+                for t_url in taskfile:
+                    if len(t_url.strip()) > 0:
+                        self.building_report(data=t_url + " -> " + str(self.url_status_code(t_url, ["", ""])), iterate=0)
+        else:
+            # using array passed in
+            for url in urls:
+                self.building_report(data=url + " -> " + str(self.url_status_code(url, ["", ""])), iterate=0)
+        self.end_task()
+        print(self.report_finished())
+
 """This sub class is for making task functions that use the AgentPy core"""
+
