@@ -3,17 +3,23 @@ __author__ = 'jason.a.martin'
 from AgentPy.AgentPy import WebWorker
 from bs4 import BeautifulSoup
 
+'''
+    This file serves as an example of what you can do. Make your own task file by copying what's above this comment then putting functions inside of the WorkerTasks class like this:
 
-# TODO: REMOVE BeautifulSoup and put it in main class. This sub should largely be void of reqs.
-# TODO: Clean up this sub class, especially task_home_crawl
-# TODO: Find way for page_crawl_scrub to be in main class.
+    class WorkerTasks(WebWorker):
+        def whatever(self):
+            print("hi);
+'''
 
 class WorkerTasks(WebWorker):
+
+    """This sub class is for making task functions that use the AgentPy core"""
 
     def task_home_crawl(self):
         """This task will hit a home page and keep crawling all pages of the base_url until the list is done.
         This task can be a good way to see all the possible URLs a visitor can hit from the homepage and to be sure
-        your sitemap is accurate (or use this to build a sitemap)."""
+        your sitemap is accurate (or use this to build a sitemap).
+        WARNING: This task is highly experimental and can lead to TONS of crawling especially with dynamic urls."""
         self.start_task()
         self.create_report_file()
         response = self.fetch_page(self.base_url)
@@ -122,5 +128,18 @@ class WorkerTasks(WebWorker):
         self.end_task()
         print(self.report_finished())
 
-"""This sub class is for making task functions that use the AgentPy core"""
-
+    def robot_parse(self, robots_url='', chain=False):
+        # This function will attempt to grab a robots.txt file, read it and add any Disallow urls to the exception list.
+        # By default it looks for /robots.txt off the base url, but you can pass in a custom url.
+        # Pass in chain=True to get back a dictionary object containing both Allow and Disallow items found in the Robots file.
+        # Note: If you pass chain=True, this function will not append your exception list.
+        if robots_url:
+            my_stuff = self.robot_filter(robots_url)
+        else:
+            my_stuff = self.robot_filter()
+        if not chain:
+            for site in my_stuff["disallow"]:
+                self.exception_list.append(self.base_url + site)
+                print(self.exception_list)
+        else:
+            return my_stuff

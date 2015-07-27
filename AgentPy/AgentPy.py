@@ -284,3 +284,30 @@ class WebWorker(object):
             else:
                 if (self.base_url+"/"+str(link) not in self.pages_to_crawl) and (self.base_url+"/"+str(link) not in self.pages_crawled):
                     self.pages_to_crawl.append(self.base_url+"/"+str(link))
+
+    def robot_filter(self, robots_url=''):
+        # Try to grab /robots.txt or provided url and look for Disallow: and add that data to exception list.
+        # Returns a dictionary of two arrays, allow and disallow.
+        disallow_robot_items = []
+        allow_robot_items = []
+        all_robot_items = {
+            "allow" : allow_robot_items,
+            "disallow" : disallow_robot_items
+        }
+        if robots_url:
+            robots_file = self.fetch_page(robots_url)
+        else:
+            robots_file = self.fetch_page(self.base_url+"/robots.txt")
+        parse_file = robots_file.readlines()
+        for item in parse_file:
+            # if Disallow is not in string, dump it
+            # replacing garbage potentially found in item and splitting item by spaces
+            current_item = str(item).replace("\\r", "").replace("'","").replace("\\n", "").replace("b'","").split(" ")
+            if len(current_item) > 1:
+                if ("*" not in current_item[1]) and ("$" not in current_item[1]) and (len(str(current_item[1])) > 0):
+                    # current item has no restricted items and is 1+ chars in length.
+                    if "Disallow" in current_item[0]:
+                        disallow_robot_items.append(current_item[1])
+                    if "Allow" in current_item[0]:
+                        allow_robot_items.append(current_item[1])
+        return all_robot_items

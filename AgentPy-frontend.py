@@ -73,11 +73,11 @@ if args.reporttime:
 # task key , list[task description, report name, "mobile" or "wired"]
 
 worker_task_options = {
-    "1": ["Check for mobile pages that have absolute links on them.", "rep-m-AbsoluteLinks", "mobile"],
-    "2": ["Check wired pages for missing alternate tag.", "rep-wired-Alternate-Missing", "wired"],
-    "3": ["Discover all linked pages from homepage - mobile.", "rep-mobile-HomeCrawl", "mobile"],
-    "4": ["Discover all linked pages from homepage - wired.", "rep-wired-HomeCrawl", "wired"],
-    "5": ["Code search: Find html comment: <!-- xxx -->", "rep-nocare","wired"]
+    "1": ["Check for mobile pages that have absolute links on them."],
+    "2": ["Check wired pages for missing alternate tag."],
+    "3": ["Discover all linked pages from homepage - mobile."],
+    "4": ["Discover all linked pages from homepage - wired."],
+    "5": ["Code search: Find html comment: <!-- xxx -->"]
 }
 
 # doing a simple catch for task outside of range
@@ -92,7 +92,8 @@ worker = AgentPy.AgentPyTasks.WorkerTasks(task_description=worker_task_options[w
 
 if worker_task == "1":
     # check for absolute links
-    worker.task_absolute_links(allow_list=["http://www.mysite.com"], site_type=site_type, flag_max=1, no_report_urls=['http://www.balh.com/?fake=true'], report_only_offending=True, check_url=True, replace_url=["www","m"])
+    worker.robot_parse()
+    #worker.task_absolute_links(allow_list=["http://www.mysite.com"], site_type=site_type, flag_max=1, no_report_urls=['http://www.balh.com/?fake=true'], report_only_offending=True, check_url=True, replace_url=["www","m"])
 if worker_task == "2":
     # check for missing alternate media tag
     worker.task_check_tags(has_tags=False, tag='link', classname='alternate', sub_tag_type='rel', site_type=site_type, flag_max=0)
