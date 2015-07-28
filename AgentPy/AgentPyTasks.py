@@ -51,6 +51,7 @@ class WorkerTasks(WebWorker):
         self.start_task()
         self.create_report_file()
         has_sitemap = self.get_sitemap()
+        offending_items = 0
         if has_sitemap:
             if site_type == 'mobile':
                 links = self.get_mobile_pages()
@@ -60,9 +61,13 @@ class WorkerTasks(WebWorker):
             for link in links:
                 current_item = self.catch_absolute_links(page=link, allow_list=allow_list)
                 if current_item:
+                    offending_items += 1
                     self.building_report(data=current_item, iterate=1, flag_max=flag_max, no_report_urls=no_report_urls, report_only_offending=report_only_offending, check_url=check_url, replace_url=replace_url)
         self.end_task()
-        print(self.report_finished())
+        if offending_items > 0:
+            print(self.report_finished())
+        else:
+            print("No offending items")
 
     def code_check(self, code='', site_type='wired'):
         """Use this when you want to do a simple parse html for code, such as looking for a hidden comment"""
@@ -92,6 +97,8 @@ class WorkerTasks(WebWorker):
         flag_max means if the bot finds more than X number of tags, it will flag the entry"""
         self.start_task()
         self.create_report_file()
+        offending_items = 0
+
         has_sitemap = self.get_sitemap()
         if has_sitemap:
             if site_type == 'mobile':
@@ -104,12 +111,17 @@ class WorkerTasks(WebWorker):
                 if not checking_link:
                     current_item = self.check_for_page_tags(page=link, tag=tag, classname=classname, sub_tag_type=sub_tag_type)
                     if current_item and has_tags:
+                        offending_items += 1
                         self.building_report(data=current_item, iterate=1, flag_max=flag_max)
                     elif not current_item and not has_tags:
                         # the link has no ad div
+                        offending_items += 1
                         self.building_report(data=link, iterate=0,  flag_max=flag_max)  # 0 for not iterating list
         self.end_task()
-        print(self.report_finished())
+        if offending_items > 0:
+            print(self.report_finished())
+        else:
+            print("No offending items")
 
     def url_verify(self, urls=[]):
         self.start_task()
@@ -143,3 +155,62 @@ class WorkerTasks(WebWorker):
                 print(self.exception_list)
         else:
             return my_stuff
+
+    # Custom Tasks
+    # Leaving these in the main repo in case others want to learn from them, use them or rebuild from them.
+
+    def vdc_mobile_absolute_links(self, allow_list=[], site_type='wired', show_all=False):
+        '''
+        1. This custom function will look at a mobile page and search for absolute links.
+        2. Once those links are found, it does a replace (www. to m.) to see if there is indeed a mobile page.
+        3A. If show_all is FALSE, it wll report only offending urls (those returning a 200 status).
+        3B. If show_all is TRUE, it will report all absolute links along with their status code.
+        4. Since the test server for this function is returning 200 for pages on mobile that don't really exist, I'm doing a code check.
+        '''
+        self.start_task()
+        self.create_report_file()
+        self.raw_report_addition(txt_data="\nStatus: 200 = Mobile version of the page does exist.\nStatus: 200(False) = Mobile page doesn't exist, but some sort of non-404 page is being served.\nStatus: 404 = Mobile version of the page does not exist, returns 404 page.\n\n")
+        has_sitemap = self.get_sitemap()
+        offending_items = 0
+
+        if has_sitemap:
+            if site_type == 'mobile':
+                links = self.get_mobile_pages()
+            else:
+                links = self.get_wired_pages()
+            # Got all links so parse them
+            for link in links:
+                current_item = self.catch_absolute_links(page=link, allow_list=allow_list)
+                if current_item:
+                    init = False
+                    for abs_link in current_item:
+                        if not init:
+                            # first item, which is originating page, so ignore.
+                            init = True
+                            # print("True Page: ", abs_link)
+                            self.raw_report_addition(txt_data="PAGE: {}\n\r".format(abs_link))
+                        else:
+                            # pages to check.
+                            is_mobile = self.url_status_code(abs_link, ['www.', 'm.'])
+                            if is_mobile == 200:
+                                # is it really there?
+                                page_to_check = self.fetch_page(abs_link.replace("www.", "m."))
+                                code_found = self.parse_html(page=page_to_check.read(), code="/mytrip/app/Widget")
+                                if not code_found:
+                                    # reported as 200 AND the code wasn't found, so this is likely a mobile page.
+                                    self.raw_report_addition(txt_data="Status 200: {}\n".format(abs_link))
+                                    offending_items += 1
+                                else:
+                                    if show_all:
+                                        self.raw_report_addition(txt_data="Status 200(False): {}\n".format(abs_link))
+                                        offending_items += 1
+                            else:
+                                if show_all:
+                                    self.raw_report_addition(txt_data="Status {}: {}\n".format(is_mobile, abs_link))
+                                    offending_items += 1
+                    self.raw_report_addition(txt_data="\r\r")
+        self.end_task()
+        if offending_items > 0:
+            # There's at least 1 item in the report
+            self.raw_report_addition(txt_data="\r\r========================\rOffending URLs: {}\r========================\r".format(offending_items))
+            print(self.report_finished())

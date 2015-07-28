@@ -198,6 +198,22 @@ class WebWorker(object):
             txtFile.write("Task: {}\n\n\n".format(self.task_description))
             txtFile.close()
 
+    def raw_report_addition(self, html_data='', txt_data=''):
+        # Once a report is going, this function can be used to write data to the file.
+        # If you're making your own tasks, it might be best to just generate whatever data you want in the report them spit it out here.
+        # You can pass in data for the html file, text file or both.
+
+        # write to html file
+        if html_data:
+            with open(self.report_file + '.html', 'a') as f:
+                f.write(html_data)
+                f.close()
+        # writing txt file
+        if txt_data:
+            with open(self.report_file + '.txt', 'a') as txtFile:
+                txtFile.write(txt_data)
+                txtFile.close()
+
     def building_report(self, data, iterate=1, flag_max=0, no_report_urls=[], report_only_offending=False, check_url=False, replace_url=[]):
         index = 0
         offending_items = 0
