@@ -6,7 +6,9 @@ import datetime
 import smtplib
 from email.mime.text import MIMEText
 
+
 class WebWorker(object):
+
     """A class that does various web-based tasks."""
     """Tasks are created in the subclass in AgentPyTasks.py"""
 
@@ -92,7 +94,9 @@ class WebWorker(object):
     def parse_href(self, obj):
         urls = []
         for link in obj:
-            urls.append(link.get('href'))
+            checking_link = self.scrub_link_exception(link.get('href'))
+            if not checking_link:
+                urls.append(link.get('href'))
         return urls
 
     def parse_tag_text(self, obj):
@@ -102,11 +106,19 @@ class WebWorker(object):
         return items
 
     def url_status_code(self, url='', replace_url=''):
+        if replace_url:
+            testing_url = url.replace(replace_url[0], replace_url[1])
+        else:
+            testing_url = url
         try:
-            r = urllib.request.urlopen(url.replace(replace_url[0], replace_url[1]))
-            return r.getcode()
+            r = urllib.request.urlopen(testing_url)
+            new_url = r.geturl()
+            if new_url in url:
+                return r.getcode()
+            else:
+                return 301
         except urllib.request.URLError as url_error:
-            return 404
+            return url_error
 
     def scrub_link_exception(self, page):
         link_found = False
@@ -145,7 +157,7 @@ class WebWorker(object):
                 # cycle through list and look for allowed url bases
                 for allowed_url in allow_list:
                     if allowed_url in str(link):
-                        if first_case:
+                        if firslt_case:
                             report.append(page)
                             first_case = False
                         report.append(link)
@@ -327,3 +339,12 @@ class WebWorker(object):
                     if "Allow" in current_item[0]:
                         allow_robot_items.append(current_item[1])
         return all_robot_items
+
+    def string_repeater(self, repeating_string='', repeat=0):
+        final_string = ''
+        starting_count = 1
+        if repeat > 0 and repeating_string:
+            while starting_count <= repeat:
+                final_string += repeating_string
+                starting_count += 1
+        return final_string
