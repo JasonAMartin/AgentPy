@@ -90,6 +90,7 @@ class WorkerTasks(WebWorker):
                 if not checking_link:
                     current_page = self.fetch_page(page=link)
                     if current_page:
+                        # code could be str or list
                         current_item = self.parse_html(page=current_page.read(), code=code)
                         if current_item:
                             code_found.append(link)
@@ -113,14 +114,13 @@ class WorkerTasks(WebWorker):
             else:
                 print("No offending items.")
 
-    def task_check_tags(self, has_tags=True, tag='', classname='', sub_tag_type='class', site_type='wired', flag_max=0, mobile_check=False):
+    def task_check_tags(self, has_tags=True, tag='', classname='', sub_tag_type='class', site_type='wired', flag_max=0):
         """has_tags: When set to True this function searches the page for the tag. When False, it searches for absense of tag.
         Also you pass in the tag you're searching for, like 'div' and the classname if desired, like 'my-class'
         flag_max means if the bot finds more than X number of tags, it will flag the entry"""
         self.start_task()
         self.create_report_file()
         offending_items = 0
-
         has_sitemap = self.get_sitemap()
         if has_sitemap:
             if site_type == 'mobile':

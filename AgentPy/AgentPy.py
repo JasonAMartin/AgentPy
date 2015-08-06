@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import datetime
 import smtplib
 from email.mime.text import MIMEText
+import os
 
 
 class WebWorker(object):
@@ -157,7 +158,7 @@ class WebWorker(object):
                 # cycle through list and look for allowed url bases
                 for allowed_url in allow_list:
                     if allowed_url in str(link):
-                        if firslt_case:
+                        if first_case:
                             report.append(page)
                             first_case = False
                         report.append(link)
@@ -319,8 +320,8 @@ class WebWorker(object):
         disallow_robot_items = []
         allow_robot_items = []
         all_robot_items = {
-            "allow" : allow_robot_items,
-            "disallow" : disallow_robot_items
+            "allow": allow_robot_items,
+            "disallow": disallow_robot_items
         }
         if robots_url:
             robots_file = self.fetch_page(robots_url)
@@ -348,3 +349,7 @@ class WebWorker(object):
                 final_string += repeating_string
                 starting_count += 1
         return final_string
+
+    def check_file(self, filename):
+        if not os.path.isfile(filename):
+            return False
