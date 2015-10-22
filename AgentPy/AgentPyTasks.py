@@ -69,7 +69,7 @@ class WorkerTasks(WebWorker):
         else:
             print("No offending items")
 
-    def code_check(self, code='', site_type='wired', report_type='all'):
+    def code_check(self, code=[], site_type='wired', report_type='all'):
         """Use this when you want to do a simple parse html for code, such as looking for a hidden comment"""
         self.start_task()
         self.create_report_file()
@@ -132,6 +132,7 @@ class WorkerTasks(WebWorker):
                 checking_link = self.scrub_link_exception(link)
                 if not checking_link:
                     current_item = self.check_for_page_tags(page=link, tag=tag, classname=classname, sub_tag_type=sub_tag_type)
+                    rr = self.check_meta_tags(page=link) # [0]['name'] and [0]['property']
                     if current_item and has_tags:
                         offending_items += 1
                         self.building_report(data=current_item, iterate=1, flag_max=flag_max)
@@ -217,7 +218,7 @@ class WorkerTasks(WebWorker):
                             if is_mobile == 200:
                                 # is it really there?
                                 page_to_check = self.fetch_page(abs_link.replace("www.", "m."))
-                                code_found = self.parse_html(page=page_to_check.read(), code="/mytrip/app/Widget")
+                                code_found = self.parse_html(page=page_to_check.read(), code=["/mytrip/app/Widget"])
                                 if not code_found:
                                     # reported as 200 AND the code wasn't found, so this is likely a mobile page.
                                     self.raw_report_addition(txt_data="Status 200: {}\n".format(abs_link))
@@ -265,8 +266,7 @@ class WorkerTasks(WebWorker):
                             if is_mobile == 200:
                                 # is it really there?
                                 page_to_check = self.fetch_page(link.replace("www.", "m."))
-                                code_found = self.parse_html(page=page_to_check.read(), code="/mytrip/app/Widget")
-                                # print(link)
+                                code_found = self.parse_html(page=page_to_check.read(), code=["/mytrip/app/Widget"])
                                 if not code_found:
                                     # reported as 200 AND the code wasn't found, so this is likely a mobile page.
                                     self.raw_report_addition(txt_data="\nStatus 200: {}\n".format(link))
@@ -350,3 +350,59 @@ class WorkerTasks(WebWorker):
                 report_decoration = self.string_repeater(repeating_string="=", repeat=20)
                 self.raw_report_addition(txt_data="{}Offending items: {}{}".format(report_decoration, offending_items, report_decoration))
                 print(self.report_finished())
+
+    def grab_css(self):
+        self.start_task()
+        self.create_report_file()
+        report_decoration = self.string_repeater(repeating_string="=", repeat=30)
+        has_sitemap = self.get_sitemap()
+        css_file_list = []
+
+        if has_sitemap:
+            links = self.get_wired_pages()
+            # Got all links so parse them
+            for link in links:
+                current_page = self.fetch_page(link)
+                if current_page:
+                    self.soup = BeautifulSoup(current_page.read())
+                    self.tag = "link"
+                    page_tags = self.parse_tag()
+                    page_links = self.parse_href(page_tags)
+                    for c_link in page_links:
+                        if ".css" in str(c_link):
+                            if c_link not in css_file_list:
+                                css_file_list.append(c_link)
+
+            self.raw_report_addition(txt_data="{}{}{}".format(report_decoration, css_file_list, report_decoration))
+            print(self.report_finished())
+
+
+
+
+    def task_check_meta(self, is_null='true', site_type='wired', meta_list=[], attribute_name=''):
+            """Checks that meta tag contains names/property"""
+            self.start_task()
+            self.create_report_file()
+            offending_items = 0
+            has_sitemap = self.get_sitemap()
+            if has_sitemap is not None:
+                if site_type == 'mobile':
+                    links = self.get_mobile_pages()
+                else:
+                    links = self.get_wired_pages()
+                # Got all links so parse them
+                for link in links:
+                    checking_link = self.scrub_link_exception(link)
+                    if not checking_link:
+                        all_meta = self.check_meta_tags(page=link, meta_list=meta_list, attribute_name=attribute_name) # [0]['name'] and [0]['property']
+                        if all_meta is not None:
+                            for meta in all_meta:
+                                if(all_meta[meta] is None):
+                                    offending_items += 1
+                                    self.raw_report_addition(txt_data="Meta: {} Url: {}".format(all_meta, link))
+                                    print(meta, all_meta[meta])
+            self.end_task()
+            if offending_items > 0:
+                print(self.report_finished())
+            else:
+                print("No offending items")

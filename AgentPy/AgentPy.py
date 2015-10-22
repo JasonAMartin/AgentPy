@@ -65,7 +65,15 @@ class WebWorker(object):
             return None
 
     def parse_html(self, page, code):
-        if code in str(page):
+        # code can be a single item or an array
+        # note: code needs to be sent as array
+        code_found = 0
+        required_items = 0
+        for item in code:
+            required_items += 1
+            if str(item) in str(page):
+                code_found += 1
+        if code_found == required_items:
             if not self.silent:
                 print("Code found.")
             return True
@@ -114,7 +122,7 @@ class WebWorker(object):
         try:
             r = urllib.request.urlopen(testing_url)
             new_url = r.geturl()
-            if new_url in url:
+            if new_url is testing_url:
                 return r.getcode()
             else:
                 return 301
@@ -167,6 +175,23 @@ class WebWorker(object):
             return report
         else:
             return None
+
+    def check_meta_tags(self, page, meta_list=[], attribute_name='name'):
+        meta_tags = {}
+        page_exists = self.fetch_page(page)
+        if not page_exists:
+            return None
+
+        html = page_exists.read()
+        self.soup = BeautifulSoup(html)
+        for meta in meta_list:
+            this_tag = self.soup.findAll(attrs={attribute_name: meta})
+            if(len(this_tag) > 0):
+                #print(this_tag[0]['content'])
+                meta_tags[meta] = this_tag[0]['content']
+        #if len(meta_tags) < 1:
+            # print(">>>>>>>",page, this_tag)
+        return meta_tags
 
     def check_for_page_tags(self, page, tag, classname, sub_tag_type='class'):
         # change page to match environment
